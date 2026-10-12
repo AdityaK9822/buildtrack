@@ -1,0 +1,37 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:
+
+jobs:
+  check-health:
+    name: Check Application Health
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check Backend Health
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://buildtrack-api-j1lo.onrender.com/api/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ Backend is healthy (HTTP $response)"
+          else
+            echo "❌ Backend health check failed (HTTP $response)"
+            exit 1
+          fi
+
+      - name: Check Backend Root
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://buildtrack-api-j1lo.onrender.com/)
+          if [ $response -eq 200 ]; then
+            echo "✅ Backend root endpoint is accessible (HTTP $response)"
+          else
+            echo "⚠️ Backend root endpoint returned HTTP $response"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Health Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "Timestamp: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend API: ✅ Healthy" >> $GITHUB_STEP_SUMMARY
