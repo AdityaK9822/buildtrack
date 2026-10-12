@@ -7,3 +7,14 @@ dist/
 build/
 coverage/
 firebase-service-account.json
+
+# Test files
+test-connection.js
+simple-test.js
+dns-test.js
+diagnose-mongodb.js
+test-variations.js
+network-diagnostic.js
+test-cluster-id.js
+mongodb-setup-guide.js
+setup-mongodb.sh
