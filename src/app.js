@@ -27,14 +27,42 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration
-app.use(
-  cors({
-    origin: config.clientUrl || '*',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+const allowedOrigins = [
+  'http://localhost:4000',
+  'http://localhost:3001',
+  'http://127.0.0.1:4000',
+  'http://127.0.0.1:3001',
+];
+
+// Add production frontend URL if configured
+if (config.clientUrl) {
+  allowedOrigins.push(config.clientUrl);
+}
+
+// Allow all Vercel preview deployments in production
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list or is a Vercel deployment
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      origin.includes('.vercel.app') ||
+                      origin.includes('localhost');
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
