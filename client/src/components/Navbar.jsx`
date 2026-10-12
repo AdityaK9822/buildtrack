@@ -1,0 +1,193 @@
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const Navbar = () => {
+  const { user, logout, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    setIsMenuOpen(false);
+  };
+
+  const projectMatch = location.pathname.match(/^\/projects\/([^/]+)/);
+  const projectId = projectMatch ? projectMatch[1] : null;
+
+  const menuLinkClass = (isActive) =>
+    `block py-2 px-3 ${isActive ? 'bg-primary text-white' : 'text-secondary hover:bg-primary/10 hover:text-primary'} rounded transition-colors duration-200`;
+
+  return (
+    <nav className="fixed top-4 left-4 right-4 z-50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="bg-white/80 backdrop-blur-md border border-gray-200 shadow-sm rounded-2xl px-4 py-3 flex justify-between items-center transition-all duration-300">
+          <Link to="/" className="text-primary text-2xl font-heading font-bold tracking-tight cursor-pointer">
+            BuildTrack
+          </Link>
+
+          {isAuthenticated && (
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden text-primary focus:outline-none cursor-pointer"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          )}
+
+          <div className="hidden md:flex items-center space-x-2">
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center space-x-1 mr-4">
+                  <Link
+                    to="/dashboard"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname === '/dashboard' ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                  >
+                    Dashboard
+                  </Link>
+
+                  {projectId && (
+                    <div className="flex items-center space-x-1 border-l border-gray-200 ml-2 pl-2">
+                      <Link
+                        to={`/projects/${projectId}/materials`}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname.includes('/materials') ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                      >
+                        Materials
+                      </Link>
+                      <Link
+                        to={`/projects/${projectId}/labor`}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname.includes('/labor') ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                      >
+                        Labor
+                      </Link>
+                      <Link
+                        to={`/projects/${projectId}/reports`}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname.includes('/reports') ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                      >
+                        Reports
+                      </Link>
+                      <Link
+                        to={`/projects/${projectId}/photos`}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname.includes('/photos') ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                      >
+                        Photos
+                      </Link>
+                      <Link
+                        to={`/projects/${projectId}/budget`}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname.includes('/budget') ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                      >
+                        Budget
+                      </Link>
+                    </div>
+                  )}
+
+                  {(user?.role === 'architect' || user?.role === 'admin') && (
+                    <Link
+                      to="/approvals"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${location.pathname === '/approvals' ? 'bg-primary text-white shadow-sm' : 'text-textMain hover:bg-primary/10 hover:text-primary'}`}
+                    >
+                      Approvals
+                    </Link>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-4 border-l border-gray-200 pl-4">
+                  <div className="text-right">
+                    <p className="text-xs text-secondary font-medium uppercase tracking-wider">Welcome</p>
+                    <p className="text-sm font-heading font-semibold text-textMain">{user?.name}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-bold uppercase px-2 py-1 rounded bg-secondary/20 text-secondary border border-secondary/30">
+                      {user?.role}
+                    </span>
+                    <button
+                      onClick={handleLogout}
+                      className="bg-white border border-gray-200 hover:border-primary text-primary px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer hover:bg-primary/5"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/login"
+                  className="text-textMain hover:text-primary transition-all duration-200 px-3 py-2 text-sm font-medium cursor-pointer"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all duration-200 shadow-sm cursor-pointer"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isAuthenticated && isMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 right-0 mt-2 p-2">
+          <div className="bg-white border border-gray-200 shadow-xl rounded-2xl p-4 space-y-2">
+            <Link to="/dashboard" className={menuLinkClass(location.pathname === '/dashboard')}>
+              Dashboard
+            </Link>
+
+            {projectId && (
+              <div className="pt-2 border-t border-gray-100 space-y-1">
+                <Link to={`/projects/${projectId}/materials`} className={menuLinkClass(location.pathname.includes('/materials'))}>
+                  Materials
+                </Link>
+                <Link to={`/projects/${projectId}/labor`} className={menuLinkClass(location.pathname.includes('/labor'))}>
+                  Labor
+                </Link>
+                <Link to={`/projects/${projectId}/reports`} className={menuLinkClass(location.pathname.includes('/reports'))}>
+                  Reports
+                </Link>
+                <Link to={`/projects/${projectId}/photos`} className={menuLinkClass(location.pathname.includes('/photos'))}>
+                  Photos
+                </Link>
+                <Link to={`/projects/${projectId}/budget`} className={menuLinkClass(location.pathname.includes('/budget'))}>
+                  Budget
+                </Link>
+              </div>
+            )}
+
+            {(user?.role === 'architect' || user?.role === 'admin') && (
+              <Link to="/approvals" className={menuLinkClass(location.pathname === '/approvals')}>
+                Approvals
+              </Link>
+            )}
+
+            <div className="pt-4 border-t border-gray-100">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-textMain">{user?.name}</p>
+                <p className="text-xs text-secondary">{user?.role}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200 cursor-pointer"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;

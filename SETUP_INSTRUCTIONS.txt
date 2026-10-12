@@ -1,0 +1,64 @@
+================================================================================
+FIREBASE SERVICE ACCOUNT SETUP INSTRUCTIONS
+================================================================================
+
+WHAT IS THIS?
+This is a template file for your Firebase service account JSON. You need to
+download the actual service account key from Firebase Console and replace
+the content below with the real key.
+
+================================================================================
+HOW TO GET YOUR FIREBASE SERVICE ACCOUNT KEY
+================================================================================
+
+1. GO TO: https://console.firebase.google.com/
+2. SELECT YOUR PROJECT
+3. CLICK THE ⚙️ ICON (Project settings) in top left
+4. CLICK "Service accounts" tab at the top
+5. UNDER "Firebase Admin SDK", CLICK "Generate new private key"
+6. DOWNLOAD THE JSON FILE (firebase-adminsdk-xxxxx-xxxxx.json)
+7. RENAME IT TO: firebase-service-account.json
+8. PLACE IT IN THIS FOLDER: config/firebase-service-account.json
+
+================================================================================
+SECURITY WARNINGS
+================================================================================
+
+NEVER commit this file to Git (it's already in .gitignore)
+NEVER share this file or its contents publicly
+Keep this file on secure servers only
+Rotate your service account keys periodically
+
+================================================================================
+VERIFY YOUR SETUP
+================================================================================
+
+After placing your service account key, restart your server:
+
+npm start
+
+You should see:
+Firebase Admin SDK initialized successfully
+
+If you see:
+Firebase not configured
+- Check that firebase-service-account.json is in the config/ folder
+- Check that the file contains valid JSON
+
+================================================================================
+Your actual service account JSON should look like this:
+================================================================================
+{
+  "type": "service_account",
+  "project_id": "your-project-id",
+  "private_key_id": "your-private-key-id",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR-PRIVATE-KEY-HERE\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
+}
+
+Replace all values above with your actual Firebase service account data.
+
+================================================================================

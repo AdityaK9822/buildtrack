@@ -1,0 +1,155 @@
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const Register = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'client',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const result = await register(formData);
+
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.message);
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="text-4xl font-heading font-bold text-slate-900 tracking-tight">
+            Create Account
+          </h2>
+          <p className="mt-2 text-secondary font-medium">
+            Join BuildTrack and start managing your projects
+          </p>
+        </div>
+
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-8 md:p-10 transition-all duration-300">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg text-sm mb-6 transition-all duration-300">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  placeholder="name@company.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength="6"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                  User Role
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all bg-white cursor-pointer"
+                  value={formData.role}
+                  onChange={handleChange}
+                >
+                  <option value="client">Client</option>
+                  <option value="contractor">Contractor</option>
+                  <option value="architect">Architect</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {loading ? 'Creating account...' : 'Create account'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div className="text-center">
+          <Link
+            to="/login"
+            className="text-primary hover:text-cta transition-colors duration-200 text-sm font-semibold cursor-pointer"
+          >
+            Already have an account? <span className="underline decoration-2 underline-offset-4">Sign in</span>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Register;

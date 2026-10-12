@@ -1,0 +1,252 @@
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { materialAPI } from '../../services/api';
+import LoadingSpinner from '../../components/LoadingSpinner';
+
+const CreateMaterial = () => {
+  const { id: projectId } = useParams();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'concrete',
+    quantity: '',
+    unit: 'units',
+    unitCost: '',
+    supplier: '',
+    orderDate: new Date().toISOString().split('T')[0],
+    expectedDelivery: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const calculateTotal = () => {
+    const qty = parseFloat(formData.quantity) || 0;
+    const cost = parseFloat(formData.unitCost) || 0;
+    return (qty * cost).toFixed(2);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await materialAPI.create({
+        ...formData,
+        projectId,
+        totalCost: calculateTotal(),
+        status: 'ordered',
+      });
+
+      navigate(`/projects/${projectId}/materials`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create material');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = [
+    { value: 'concrete', label: 'Concrete' },
+    { value: 'steel', label: 'Steel' },
+    { value: 'wood', label: 'Wood' },
+    { value: 'electrical', label: 'Electrical' },
+    { value: 'plumbing', label: 'Plumbing' },
+    { value: 'paint', label: 'Paint' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const units = [
+    'units', 'kg', 'lbs', 'm³', 'ft³', 'm²', 'ft²', 'bags', 'pieces', 'containers'
+  ];
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-12 mt-16">
+      <div className="mb-8">
+        <h2 className="text-3xl font-heading font-bold text-slate-900 tracking-tight">Add Material</h2>
+        <p className="text-secondary mt-1">Add a new material to your project inventory</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg mb-8 transition-all duration-300">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-200 shadow-sm p-8 md:p-12 transition-all duration-300">
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Material Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                placeholder="e.g., Portland Cement, Rebar"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all cursor-pointer"
+              >
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Unit <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="unit"
+                value={formData.unit}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all cursor-pointer"
+              >
+                {units.map(unit => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Quantity <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="quantity"
+                value={formData.quantity}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                placeholder="0"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Unit Cost <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-3.5 text-secondary font-medium">$</span>
+                <input
+                  type="number"
+                  name="unitCost"
+                  value={formData.unitCost}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-8 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Total Cost
+              </label>
+              <div className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-textMain font-bold text-lg">
+                ${calculateTotal()}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Supplier
+              </label>
+              <input
+                type="text"
+                name="supplier"
+                value={formData.supplier}
+                onChange={handleChange}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                placeholder="Supplier name (optional)"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Order Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="orderDate"
+                value={formData.orderDate}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">
+                Expected Delivery
+              </label>
+              <input
+                type="date"
+                name="expectedDelivery"
+                value={formData.expectedDelivery}
+                onChange={handleChange}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-textMain focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-6">
+            <button
+              type="button"
+              onClick={() => navigate(`/projects/${projectId}/materials`)}
+              className="flex-1 bg-white border border-gray-200 hover:border-primary text-textMain py-3 px-4 rounded-xl font-semibold transition-all duration-200 cursor-pointer hover:bg-primary/5"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-cta hover:bg-orange-600 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                  Saving...
+                </span>
+              ) : (
+                'Add Material'
+              )}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CreateMaterial;

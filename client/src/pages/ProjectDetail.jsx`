@@ -1,0 +1,357 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { projectAPI, milestoneAPI, taskAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+
+const ProjectDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [project, setProject] = useState(null);
+  const [milestones, setMilestones] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [showMilestoneForm, setShowMilestoneForm] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [milestoneForm, setMilestoneForm] = useState({ name: '', description: '', startDate: '', endDate: '' });
+  const [taskForm, setTaskForm] = useState({ name: '', description: '', milestone: '', priority: 'medium' });
+
+  useEffect(() => {
+    fetchProjectData();
+  }, [id]);
+
+  const fetchProjectData = async () => {
+    try {
+      const [projectRes, milestonesRes, tasksRes] = await Promise.all([
+        projectAPI.getById(id),
+        milestoneAPI.getAll(id),
+        taskAPI.getAll(id),
+      ]);
+
+      setProject(projectRes.data.data);
+      setMilestones(milestonesRes.data.data || []);
+      setTasks(tasksRes.data.data || []);
+    } catch (err) {
+      setError('Failed to load project details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'planning': 'bg-gray-100 text-gray-600 border-gray-200',
+      'in-progress': 'bg-primary/10 text-primary border-primary/20',
+      'on-hold': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'completed': 'bg-green-50 text-green-700 border-green-200',
+      'cancelled': 'bg-red-50 text-red-700 border-red-200',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-600 border-gray-200';
+  };
+
+  const handleCreateMilestone = async (e) => {
+    e.preventDefault();
+    try {
+      await milestoneAPI.create({
+        ...milestoneForm,
+        projectId: id,
+        startDate: milestoneForm.startDate || new Date().toISOString().split('T')[0]
+      });
+      setMilestoneForm({ name: '', description: '', startDate: '', endDate: '' });
+      setShowMilestoneForm(false);
+      fetchProjectData();
+    } catch (err) {
+      setError('Failed to create milestone');
+    }
+  };
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    try {
+      await taskAPI.create({ ...taskForm, projectId: id });
+      setTaskForm({ name: '', description: '', milestone: '', priority: 'medium' });
+      setShowTaskForm(false);
+      fetchProjectData();
+    } catch (err) {
+      setError('Failed to create task');
+    }
+  };
+
+  const handleCompleteTask = async (taskId) => {
+    try {
+      await taskAPI.complete(taskId);
+      fetchProjectData();
+    } catch (err) {
+      setError('Failed to complete task');
+    }
+  };
+
+  const canCreate = ['admin', 'contractor'].includes(user?.role);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 mt-16">
+        <p className="text-center text-secondary text-lg">Project not found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-12 mt-16">
+      <button
+        onClick={() => navigate('/dashboard')}
+        className="mb-8 text-primary hover:text-cta transition-colors duration-200 flex items-center gap-2 font-medium cursor-pointer group"
+      >
+        <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Dashboard
+      </button>
+
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg mb-8 transition-all duration-300">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-8 mb-12 transition-all duration-300">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-4xl font-heading font-bold text-slate-900 tracking-tight">{project.name}</h1>
+            <span className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusColor(project.status)}`}>
+              {project.status}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-secondary mb-8 text-lg leading-relaxed">{project.description || 'No project description available.'}</p>
+
+        <div className="mb-10">
+          <div className="flex justify-between text-sm font-semibold text-secondary uppercase tracking-wider mb-2">
+            <span>Overall Progress</span>
+            <span>{project.progress}%</span>
+          </div>
+          <div className="bg-gray-100 h-3 rounded-full overflow-hidden border border-gray-200">
+            <div
+              className="bg-primary h-full transition-all duration-500 ease-out"
+              style={{ width: `${project.progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+          <div>
+            <p className="text-xs font-medium text-secondary uppercase mb-1">Est. Budget</p>
+            <p className="text-lg font-heading font-bold text-textMain">${project.budget?.estimated?.toLocaleString() || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-secondary uppercase mb-1">Actual Budget</p>
+            <p className="text-lg font-heading font-bold text-textMain">${project.budget?.actual?.toLocaleString() || 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-secondary uppercase mb-1">Start Date</p>
+            <p className="text-lg font-heading font-bold text-textMain">{project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A'}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-secondary uppercase mb-1">End Date</p>
+            <p className="text-lg font-heading font-bold text-textMain">{project.estimatedEndDate ? new Date(project.estimatedEndDate).toLocaleDateString() : 'N/A'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="lg:col-span-2">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-heading font-bold text-slate-900">Milestones</h2>
+            {canCreate && (
+              <button
+                onClick={() => setShowMilestoneForm(!showMilestoneForm)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${showMilestoneForm ? 'bg-gray-200 text-gray-700' : 'bg-primary text-white shadow-sm hover:bg-primary/90'}`}
+              >
+                {showMilestoneForm ? 'Cancel' : '+ Add Milestone'}
+              </button>
+            )}
+          </div>
+
+          {showMilestoneForm && (
+            <form onSubmit={handleCreateMilestone} className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm transition-all duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <input
+                  type="text"
+                  placeholder="Milestone Name"
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  value={milestoneForm.name}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, name: e.target.value })}
+                />
+                <input
+                  type="date"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  value={milestoneForm.dueDate}
+                  onChange={(e) => setMilestoneForm({ ...milestoneForm, dueDate: e.target.value })}
+                />
+              </div>
+              <textarea
+                placeholder="Description"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2 mb-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                value={milestoneForm.description}
+                onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })}
+              />
+              <button
+                type="submit"
+                className="bg-cta hover:bg-orange-600 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-200 shadow-sm cursor-pointer"
+              >
+                Create Milestone
+              </button>
+            </form>
+          )}
+
+          {milestones.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-2xl">
+              <p className="text-secondary">No milestones defined for this project yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {milestones.map((milestone) => (
+                <div key={milestone._id} className="group bg-white border border-gray-200 rounded-2xl p-6 transition-all duration-300 hover:border-primary hover:shadow-md">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-heading font-bold text-slate-900 group-hover:text-primary transition-colors">{milestone.name}</h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(milestone.status)}`}>
+                      {milestone.status}
+                    </span>
+                  </div>
+                  <p className="text-secondary text-sm mb-4 leading-relaxed">{milestone.description || 'No description provided.'}</p>
+                  <div className="flex justify-between items-center text-xs font-semibold text-secondary uppercase tracking-wider pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <span>Progress:</span>
+                      <span className="text-textMain">{milestone.progress || 0}%</span>
+                    </div>
+                    {milestone.dueDate && (
+                      <div className="flex items-center gap-2">
+                        <span>Due:</span>
+                        <span className="text-textMain">{new Date(milestone.dueDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-heading font-bold text-slate-900">Project Tasks</h2>
+            {canCreate && (
+              <button
+                onClick={() => setShowTaskForm(!showTaskForm)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${showTaskForm ? 'bg-gray-200 text-gray-700' : 'bg-primary text-white shadow-sm hover:bg-primary/90'}`}
+              >
+                {showTaskForm ? 'Cancel' : '+ Add Task'}
+              </button>
+            )}
+          </div>
+
+          {showTaskForm && (
+            <form onSubmit={handleCreateTask} className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 shadow-sm transition-all duration-300">
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Task Name"
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  value={taskForm.name}
+                  onChange={(e) => setTaskForm({ ...taskForm, name: e.target.value })}
+                />
+                <textarea
+                  placeholder="Task Description"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <select
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                    value={taskForm.milestone}
+                    onChange={(e) => setTaskForm({ ...taskForm, milestone: e.target.value })}
+                  >
+                    <option value="">Assign to Milestone (optional)</option>
+                    {milestones.map((m) => (
+                      <option key={m._id} value={m._id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                    value={taskForm.priority}
+                    onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  className="bg-cta hover:bg-orange-600 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-200 shadow-sm cursor-pointer"
+                >
+                  Create Task
+                </button>
+              </div>
+            </form>
+          )}
+
+          {tasks.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-2xl">
+              <p className="text-secondary">No tasks assigned to this project yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {tasks.map((task) => (
+                <div key={task._id} className="group bg-white border border-gray-200 rounded-2xl p-4 flex justify-between items-center transition-all duration-300 hover:border-primary hover:shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                    <div>
+                      <h3 className={`font-semibold transition-colors ${task.status === 'completed' ? 'text-secondary line-through' : 'text-textMain group-hover:text-primary'}`}>
+                        {task.name}
+                      </h3>
+                      <p className="text-xs text-secondary">{task.description || 'No description'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      task.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    }`}>
+                      {task.status}
+                    </span>
+                    {task.status !== 'completed' && canCreate && (
+                      <button
+                        onClick={() => handleCompleteTask(task._id)}
+                        className="bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer"
+                      >
+                        Complete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProjectDetail;
