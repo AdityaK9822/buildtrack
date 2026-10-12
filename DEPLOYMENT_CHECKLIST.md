@@ -1,313 +1,385 @@
 # BuildTrack Deployment Checklist
 
-## Pre-Deployment Status ✅
-
-- ✅ Code is on GitHub: `https://github.com/AdityaK9822/buildtrack`
-- ✅ JWT_SECRET updated with secure 128-character key
-- ✅ `.env` file configured (local)
-- ✅ `.gitignore` excludes sensitive files
-- ✅ Backend structure: Node.js/Express (root directory)
-- ✅ Frontend structure: React/Vite (client directory)
-- ✅ Deployment guide created: `DEPLOYMENT_GUIDE.md`
+Complete guide for deploying BuildTrack to production.
 
 ---
 
-## Step 1: Set Up MongoDB Atlas 💾
+## 📋 Pre-Deployment Checklist
 
-**What you need to do:**
+### Environment Variables Required
 
-1. **Create MongoDB Atlas Account** (if you don't have one)
-   - Go to: https://www.mongodb.com/cloud/atlas
-   - Sign up or log in
+**Backend (.env / Render Environment Variables)**
+- [x] `MONGODB_URI` - MongoDB Atlas connection string
+- [x] `JWT_SECRET` - Strong secret key (min 32 characters)
+- [x] `NODE_ENV` - Set to `production`
+- [x] `PORT` - Set to `3000` (or let Render handle it)
+- [ ] `CLIENT_URL` - Your Vercel frontend URL (add after deploying frontend)
+- [ ] `FIREBASE_PRIVATE_KEY` - For push notifications (optional)
+- [ ] `FIREBASE_PROJECT_ID` - For Firebase (optional)
+- [ ] `WEATHER_API_KEY` - For weather features (optional)
 
-2. **Create a Cluster**
-   - Click "Build a Database"
-   - Choose "M0 FREE" tier
-   - Select your preferred region
-   - Click "Create Cluster"
+**Frontend (.env.production)**
+- [x] `VITE_API_BASE_URL` = `https://buildtrack-api-j1lo.onrender.com/api`
 
-3. **Create Database User**
-   - Go to "Database Access" → "Add New Database User"
-   - Choose "Password" authentication
-   - Create username and password (save these!)
-   - Set privileges: "Read and write to any database"
+---
 
-4. **Whitelist IP Address**
-   - Go to "Network Access" → "Add IP Address"
-   - For Render: Click "Allow Access from Anywhere" (0.0.0.0/0)
-   - For local dev: Add your current IP
+## 🚀 Deployment Steps
 
-5. **Get Connection String**
-   - Go to "Clusters" → "Connect"
-   - Choose "Connect your application"
-   - Copy the connection string
-   - Replace `<password>` with your database user password
-   - Save this connection string - you'll need it for Render!
+### Step 1: Backend Deployment (Render)
 
-**Example connection string:**
-```
-mongodb+srv://buildtrack_user:your_password@cluster0.xxxxx.mongodb.net/buildtrack?retryWrites=true&w=majority
+**Status: ✅ COMPLETED**
+
+- **URL**: https://buildtrack-api-j1lo.onrender.com
+- **Service ID**: `srv-db6e0lh42hec73btatcg`
+- **Region**: Oregon (US West)
+- **Instance Type**: Free
+
+**Completed Tasks:**
+- [x] Created Render account and service
+- [x] Connected GitHub repository
+- [x] Set environment variables in Render dashboard
+- [x] Configured `render.yaml` for deployment
+- [x] Whitelisted `0.0.0.0/0` in MongoDB Atlas Network Access
+- [x] Verified `/api/health` endpoint is working
+- [x] Added root route handler (`/`)
+- [x] Updated CORS configuration
+
+**Verification:**
+```bash
+# Test health endpoint
+curl https://buildtrack-api-j1lo.onrender.com/api/health
+
+# Test root endpoint
+curl https://buildtrack-api-j1lo.onrender.com/
 ```
 
 ---
 
-## Step 2: Deploy Backend to Render 🚀
+### Step 2: Frontend Deployment (Vercel)
 
-### 2.1 Create Render Account
-**What you need to do:**
+**Status: ⏳ PENDING**
 
-1. Go to: https://dashboard.render.com/
-2. Sign up or log in (you already have an account: asukathreads@gmail.com)
+#### Option A: Vercel CLI Deployment
 
-### 2.2 Create Web Service
-**What you need to do:**
-
-1. Click "New +" → "Web Service"
-2. Connect GitHub repository:
-   - Click "Connect GitHub"
-   - Authorize Render to access GitHub
-   - Select repository: `AdityaK9822/buildtrack`
-
-3. Configure service:
-   ```
-   Name:            buildtrack-backend
-   Region:          Oregon (or your preferred region)
-   Branch:          main
-   Root Directory:  . (leave empty or ".")
-   Runtime:         Node
-   Build Command:   npm install
-   Start Command:   node server.js
-   Instance Type:   Starter ($7/month) or Free (if available)
+1. **Install Vercel CLI** (if not installed)
+   ```bash
+   npm install -g vercel
    ```
 
-### 2.3 Add Environment Variables
-**What you need to do:**
+2. **Login to Vercel**
+   ```bash
+   vercel login
+   ```
 
-In the "Environment" section, add these variables:
+3. **Navigate to client directory**
+   ```bash
+   cd "/Users/aditya/Coding/NodeJS & MongoDB & Firebase/Major Project/client"
+   ```
+
+4. **Deploy to preview**
+   ```bash
+   vercel
+   ```
+   
+   Follow prompts:
+   - Link to existing project? → **No**
+   - Project name? → **buildtrack-client**
+   - In which directory? → **./**
+   - Override settings? → **No**
+
+5. **Deploy to production**
+   ```bash
+   vercel --prod
+   ```
+
+#### Option B: Vercel Dashboard Deployment
+
+1. Go to https://vercel.com/login
+2. Click **"Add New"** → **"Project"**
+3. Import GitHub repository: `AdityaK9822/buildtrack`
+4. Configure project:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `client`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+5. Add Environment Variables:
+   - `VITE_API_BASE_URL` = `https://buildtrack-api-j1lo.onrender.com/api`
+6. Click **"Deploy"**
+
+**After Deployment:**
+- [ ] Note your production URL (e.g., `https://buildtrack-client.vercel.app`)
+- [ ] Test frontend loads correctly
+- [ ] Test API connectivity
+
+---
+
+### Step 3: Update Backend CORS with Frontend URL
+
+**Status: ⏳ PENDING (after Step 2)**
+
+1. Go to Render Dashboard: https://dashboard.render.com/web/srv-db6e0lh42hec73btatcg
+2. Click **"Environment"** tab
+3. Add/Edit environment variable:
+   ```
+   CLIENT_URL = https://your-vercel-app.vercel.app
+   ```
+4. Click **"Save Changes"**
+5. Wait for automatic redeploy (1-2 minutes)
+
+**Note:** The CORS configuration now automatically allows all `.vercel.app` URLs, but setting `CLIENT_URL` is recommended for production.
+
+---
+
+### Step 4: Push Latest Changes to GitHub
+
+**Status: ⏳ PENDING**
+
+Some changes (CORS update) need to be pushed:
 
 ```bash
-# REQUIRED
-MONGODB_URI=mongodb+srv://buildtrack_user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/buildtrack?retryWrites=true&w=majority
-JWT_SECRET=7e1c9709a9184915467cc3c3fc823d2a123ed40663200475b0916785e049dcf1342510ba5c3b0b16be08494f78fe44310a1fd93d3cb3ab49e11b358069e241c4
-NODE_ENV=production
-PORT=3000
-
-# OPTIONAL (but recommended)
-JWT_EXPIRES_IN=7d
-CLIENT_URL=https://your-frontend-url.vercel.app
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# OPTIONAL - Firebase (if using push notifications)
-FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nYOUR_FIREBASE_KEY\n-----END PRIVATE KEY-----\n
-FIREBASE_KEY_FILE=config/firebase-service-account.json
-
-# OPTIONAL - Weather API
-WEATHER_API_KEY=your_openweathermap_api_key
-WEATHER_API_URL=https://api.openweathermap.org/data/2.5
+cd "/Users/aditya/Coding/NodeJS & MongoDB & Firebase/Major Project"
+git status
+git push origin master
 ```
 
-4. Click "Create Web Service"
-
-### 2.4 Wait for Deployment
-- Render will build and deploy your backend
-- This usually takes 5-10 minutes
-- Check "Logs" tab for any errors
-- Once deployed, copy your backend URL (e.g., `https://buildtrack-backend.onrender.com`)
+**If authentication fails:**
+1. Generate GitHub Personal Access Token (PAT):
+   - Go to: https://github.com/settings/tokens
+   - Generate new token (classic)
+   - Select `repo` scope
+2. Use PAT as password when prompted
 
 ---
 
-## Step 3: Deploy Frontend to Vercel ▲
+## ✅ Post-Deployment Verification
 
-### 3.1 Install Vercel CLI
-**What you need to do:**
+### Backend Health Checks
 
 ```bash
-npm install -g vercel
+# Health endpoint
+curl https://buildtrack-api-j1lo.onrender.com/api/health
+
+# Root endpoint
+curl https://buildtrack-api-j1lo.onrender.com/
+
+# Expected response:
+# {"success":true,"message":"Welcome to BuildTrack API",...}
 ```
 
-### 3.2 Authenticate with Vercel
-**What you need to do:**
+### Frontend Verification
+
+1. Open your Vercel URL in browser
+2. Check browser console for errors
+3. Test user registration
+4. Test user login
+5. Test project creation
+6. Verify all API calls work
+
+### Full-Stack Integration Test
 
 ```bash
-vercel login
+# Test CORS from frontend
+curl -I -X OPTIONS \
+  -H "Origin: https://your-vercel-app.vercel.app" \
+  -H "Access-Control-Request-Method: GET" \
+  https://buildtrack-api-j1lo.onrender.com/api/health
+
+# Should return:
+# Access-Control-Allow-Origin: https://your-vercel-app.vercel.app
+# Access-Control-Allow-Credentials: true
 ```
-
-This will open a browser window. Log in with your preferred method (GitHub, GitLab, Bitbucket, or email).
-
-### 3.3 Deploy to Vercel
-**What you need to do:**
-
-Option A: Deploy using CLI (Recommended)
-```bash
-cd "/Users/aditya/Coding/NodeJS & MongoDB & Firebase/Major Project/client"
-vercel
-```
-
-Follow the prompts:
-1. Link to existing project? **No**
-2. Project name: **buildtrack-client**
-3. Directory: **.** (current directory)
-4. Modify settings? **No**
-
-Option B: Deploy using Dashboard
-1. Go to: https://vercel.com/
-2. Click "Add New..." → "Project"
-3. Import `AdityaK9822/buildtrack`
-4. Configure:
-   ```
-   Framework Preset:  Vite
-   Root Directory:     client
-   Build Command:      npm run build
-   Output Directory:   dist
-   ```
-5. Add Environment Variable:
-   ```
-   VITE_API_BASE_URL=https://buildtrack-backend.onrender.com
-   ```
-   (Replace with your actual Render backend URL)
-6. Click "Deploy"
-
-### 3.4 Get Frontend URL
-- After deployment, Vercel will provide a URL (e.g., `https://buildtrack-client.vercel.app`)
-- Copy this URL for the next step
 
 ---
 
-## Step 4: Update Backend with Frontend URL 🔄
+## 🔧 Configuration Files Summary
 
-**What you need to do:**
+### Backend Files
 
-1. Go to your Render dashboard: https://dashboard.render.com/
-2. Select your `buildtrack-backend` service
-3. Go to "Environment" tab
-4. Update `CLIENT_URL` to your Vercel frontend URL
-   ```
-   CLIENT_URL=https://buildtrack-client.vercel.app
-   ```
-5. Click "Save Changes"
-6. Render will automatically redeploy
-
----
-
-## Step 5: Test Your Deployment ✅
-
-### Test Backend
-Visit your backend URL:
-```
-https://buildtrack-backend.onrender.com/api/health
+**render.yaml** - Render deployment config
+```yaml
+services:
+  - type: web
+    name: buildtrack-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
 ```
 
-Expected response: API health status or welcome message
+**src/app.js** - CORS configuration
+- Allows localhost for development
+- Allows all `.vercel.app` preview deployments
+- Supports `CLIENT_URL` environment variable
+- Credentials enabled for authentication
 
-### Test Frontend
-Visit your frontend URL:
+### Frontend Files
+
+**client/vercel.json** - Vercel deployment config
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
 ```
-https://buildtrack-client.vercel.app
+
+**client/.env.production** - Production environment
+```
+VITE_API_BASE_URL=https://buildtrack-api-j1lo.onrender.com/api
 ```
 
-Expected: Your BuildTrack React application loads
+---
 
-### Test API Integration
-- Try to register/login
-- Create a test project
-- Upload a test photo
-- Check if data persists in MongoDB Atlas
+## 🔐 MongoDB Atlas Configuration
+
+**Status: ✅ CONFIGURED**
+
+- **Cluster Name**: BuildTrack
+- **Connection String**: `mongodb+srv://AdityaK9822:Aditi9822@ac-akuinwv-shard-00-XX.pz6f33q.mongodb.net`
+- **Network Access**: `0.0.0.0/0` (Allow access from anywhere)
+- **Database User**: `AdityaK9822`
+
+**Security Note:** For production, consider:
+- [ ] Creating IP-specific whitelist (requires static IP)
+- [ ] Creating production-specific database user
+- [ ] Enabling MongoDB Atlas encryption at rest
 
 ---
 
-## Troubleshooting 🔧
+## 🌐 Production URLs
 
-### Backend Issues
-
-**Problem: "MONGODB_URI must be set in production"**
-- Solution: Make sure MongoDB Atlas connection string is added correctly
-- Check for typos in password (URL encode special characters)
-- Ensure IP whitelist includes `0.0.0.0/0`
-
-**Problem: Build fails**
-- Solution: Check Render logs
-- Verify `npm install` runs without errors
-- Check Node.js version compatibility (requires Node 18+)
-
-**Problem: "Cannot GET /"**
-- Solution: This is normal - your API routes start with `/api`
-- Try `/api/health` or `/api/projects`
-
-### Frontend Issues
-
-**Problem: "Failed to fetch" or API connection errors**
-- Solution: Verify `VITE_API_BASE_URL` points to Render backend
-- Check CORS settings in backend `CLIENT_URL`
-- Ensure both URLs use HTTPS
-
-**Problem: Build fails on Vercel**
-- Solution: Check Vercel build logs
-- Verify `npm run build` runs locally
-- Check for missing dependencies in `package.json`
-
-### Database Issues
-
-**Problem: Connection timeout**
-- Solution: Check MongoDB Atlas IP whitelist
-- Ensure `0.0.0.0/0` is added
-- Verify connection string is correct
-
-**Problem: Authentication failed**
-- Solution: Double-check database username and password
-- Ensure password is URL-encoded if it contains special characters
-
----
-
-## Estimated Costs 💰
-
-| Service | Tier | Monthly Cost |
-|---------|------|--------------|
-| **Render** | Starter | $7/month |
-| **Vercel** | Hobby | Free |
-| **MongoDB Atlas** | M0 (Free) | $0 |
-| **Total** | | **$7/month** |
-
-**Free tier alternative:**
-- Render: Free tier (limited, spins down after inactivity)
-- Vercel: Free tier
-- MongoDB Atlas: Free tier
-- **Total: $0/month** (with limitations)
-
----
-
-## Next Steps After Deployment 📝
-
-1. ✅ Set up monitoring and alerts (Render dashboard)
-2. ✅ Configure custom domain (optional)
-3. ✅ Set up CI/CD for automatic deployments
-4. ✅ Add Firebase push notifications (optional)
-5. ✅ Configure rate limiting and security headers
-6. ✅ Set up MongoDB Atlas backups
-7. ✅ Add SSL certificates (automatic with Render/Vercel)
-
----
-
-## Quick Reference 🔖
-
-| Resource | URL |
-|----------|-----|
+| Service | URL |
+|---------|-----|
+| Backend API | https://buildtrack-api-j1lo.onrender.com |
+| Health Check | https://buildtrack-api-j1lo.onrender.com/api/health |
+| Frontend | https://YOUR-APP.vercel.app (pending deployment) |
 | GitHub Repo | https://github.com/AdityaK9822/buildtrack |
-| Render Dashboard | https://dashboard.render.com/ |
-| Vercel Dashboard | https://vercel.com/ |
-| MongoDB Atlas | https://cloud.mongodb.com/ |
-| Firebase Console | https://console.firebase.google.com/ |
 
 ---
 
-## Support
+## 🚨 Troubleshooting
 
-- Check `DEPLOYMENT_GUIDE.md` for detailed instructions
-- Review Render logs: Dashboard → Service → Logs
-- Review Vercel logs: Dashboard → Project → Deployments
-- MongoDB Atlas support: https://www.mongodb.com/docs/atlas/
+### Issue: Frontend can't connect to backend
+
+**Symptoms:**
+- CORS errors in browser console
+- Network requests fail
+- 401/403 errors
+
+**Solutions:**
+1. Check CORS configuration in `src/app.js`
+2. Verify `CLIENT_URL` in Render environment
+3. Check browser network tab for blocked requests
+4. Verify `VITE_API_BASE_URL` in Vercel environment
+
+### Issue: Render deployment fails
+
+**Symptoms:**
+- Build fails
+- Server won't start
+- Health check fails
+
+**Solutions:**
+1. Check Render logs for errors
+2. Verify all environment variables are set
+3. Check `render.yaml` configuration
+4. Verify `package.json` scripts are correct
+
+### Issue: MongoDB connection fails
+
+**Symptoms:**
+- "Connection timeout"
+- "IP not whitelisted"
+- Server crashes on startup
+
+**Solutions:**
+1. Verify Network Access in MongoDB Atlas
+2. Check database user credentials
+3. Verify connection string format
+4. Check MongoDB Atlas cluster status
+
+### Issue: Git push hangs/fails
+
+**Symptoms:**
+- Push timeout
+- Authentication failed
+- Permission denied
+
+**Solutions:**
+1. Use GitHub Personal Access Token (PAT)
+2. Check internet connection
+3. Verify repository permissions
+4. Try SSH instead of HTTPS
 
 ---
 
-**Last Updated:** 2026-10-12
-**Status:** Ready to deploy ✅
+## 📊 Monitoring & Maintenance
+
+### Render Dashboard
+- URL: https://dashboard.render.com/web/srv-db6e0lh42hec73btatcg
+- Monitor: CPU, Memory, Response time
+- Logs: Real-time server logs
+- Alerts: Set up email notifications
+
+### Vercel Dashboard
+- URL: https://vercel.com/dashboard
+- Monitor: Deployments, Analytics
+- Logs: Function logs, build logs
+- Domains: Custom domain setup
+
+### MongoDB Atlas
+- URL: https://cloud.mongodb.com
+- Monitor: Connections, Operations, Storage
+- Alerts: Set up performance alerts
+- Backups: Enable cloud backup (paid plans)
+
+---
+
+## 🎯 Next Steps After Deployment
+
+1. [ ] Set up custom domain (optional)
+2. [ ] Configure SSL certificates (automatic with Vercel/Render)
+3. [ ] Set up monitoring and alerts
+4. [ ] Implement rate limiting (already configured)
+5. [ ] Set up CI/CD pipeline (GitHub Actions)
+6. [ ] Add database backups
+7. [ ] Configure Firebase for push notifications
+8. [ ] Add email service for notifications
+9. [ ] Set up error tracking (Sentry, LogRocket)
+10. [ ] Performance optimization and caching
+
+---
+
+## 📝 Notes
+
+- **Free Tier Limits:**
+  - Render: 750 hours/month, spins down after inactivity
+  - Vercel: 100GB bandwidth, 100 builds/day
+  - MongoDB Atlas: 512MB storage, shared cluster
+
+- **Cold Start:**
+  - Render free tier spins down after 15 min inactivity
+  - First request after spin-down takes 30-60 seconds
+  - Consider upgrading to paid tier for production
+
+- **Rate Limiting:**
+  - Backend has rate limiting: 100 requests per 15 min
+  - Adjust in `src/app.js` if needed
+
+---
+
+## 🆘 Support
+
+- **Render Documentation**: https://render.com/docs
+- **Vercel Documentation**: https://vercel.com/docs
+- **MongoDB Atlas**: https://docs.atlas.mongodb.com
+
+---
+
+**Last Updated**: October 12, 2026  
+**Deployment Version**: 1.0.0  
+**Maintained By**: BuildTrack Team
