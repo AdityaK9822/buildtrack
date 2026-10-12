@@ -61,6 +61,30 @@ if (config.nodeEnv === 'development') {
   app.use(morgan('combined'));
 }
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to BuildTrack API',
+    version: '1.0.0',
+    documentation: '/api/health',
+    endpoints: {
+      auth: '/api/auth',
+      projects: '/api/projects',
+      milestones: '/api/milestones',
+      tasks: '/api/tasks',
+      materials: '/api/materials',
+      labor: '/api/labor',
+      reports: '/api/reports',
+      photos: '/api/photos',
+      budget: '/api/budget',
+      approvals: '/api/approvals',
+      notifications: '/api/notifications',
+      health: '/api/health',
+    },
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
